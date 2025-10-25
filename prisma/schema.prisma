@@ -1,0 +1,333 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------------------
+// 1. System Setup
+// -------------------------------------------------------------------------
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------------------
+// 2. ENUMS
+// -------------------------------------------------------------------------
+enum Role {
+  ADMIN
+  PROJECT_MANAGER
+  TEAM_MEMBER
+  CLIENT
+}
+
+enum TaskStatus {
+  TO_DO
+  IN_PROGRESS
+  IN_REVIEW
+  COMPLETED
+  BLOCKED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+// -------------------------------------------------------------------------
+// 3. AUTH MODELS (Auth.js / NextAuth adapter)
+// -------------------------------------------------------------------------
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(TEAM_MEMBER)
+  password      String? // Optional if you want to allow email/password auth
+
+  accounts Account[]
+  sessions Session[]
+
+  // Relations
+  projectsOwned   Project[]     @relation("ProjectOwner")
+  tasksAssigned   Task[]        @relation("TaskAssignee")
+  timesheets      Timesheet[]
+  risksReported   Risk[]
+  teamMemberships TeamMember[]
+  activityLogs    ActivityLog[]
+  comments        Comment[]
+  attachments     Attachment[]
+  resources       Resource[] // ✅ added this
+
+  isAvailable Boolean @default(true) // HR resource availability
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// -------------------------------------------------------------------------
+// 4. PROJECTS & PLANNING
+// -------------------------------------------------------------------------
+model Project {
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  status       ProjectStatus @default(PLANNING)
+  budgetedCost Float         @default(0)
+  startDate    DateTime?
+  dueDate      DateTime?
+  isTemplate   Boolean       @default(false)
+
+  // Relations
+  ownerId      String
+  owner        User            @relation("ProjectOwner", fields: [ownerId], references: [id])
+  milestones   Milestone[]
+  tasks        Task[]
+  resources    Resource[]
+  attachments  Attachment[]
+  budgets      ProjectBudget[]
+  risks        Risk[]
+  comments     Comment[]
+  activityLogs ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  dueDate     DateTime
+  isCompleted Boolean  @default(false)
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+// -------------------------------------------------------------------------
+// 5. TASK MANAGEMENT
+// -------------------------------------------------------------------------
+model Task {
+  id              String     @id @default(cuid())
+  projectId       String
+  title           String
+  description     String?
+  status          TaskStatus @default(TO_DO)
+  priority        Priority   @default(MEDIUM)
+  startDate       DateTime?
+  dueDate         DateTime?
+  estimatedHours  Float      @default(0)
+  spentHours      Float      @default(0)
+  deliverableName String?
+
+  // Relations
+  project    Project @relation(fields: [projectId], references: [id])
+  assigneeId String?
+  assignee   User?   @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  dependencies TaskDependency[] @relation("TaskDependencies")
+  dependents   TaskDependency[] @relation("TaskDependents") // ✅ added this
+  timesheets   Timesheet[]
+  attachments  Attachment[]
+  comments     Comment[]
+  activityLogs ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Task dependencies (supports many-to-many for Gantt)
+model TaskDependency {
+  id        String @id @default(cuid())
+  taskId    String
+  dependsOn String
+
+  task    Task @relation("TaskDependencies", fields: [taskId], references: [id])
+  depends Task @relation("TaskDependents", fields: [dependsOn], references: [id])
+}
+
+// -------------------------------------------------------------------------
+// 6. TIME TRACKING
+// -------------------------------------------------------------------------
+model Timesheet {
+  id          String   @id @default(cuid())
+  minutes     Int
+  date        DateTime @default(now())
+  isBillable  Boolean  @default(true)
+  description String?
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// -------------------------------------------------------------------------
+// 7. ANALYTICS & RISK
+// -------------------------------------------------------------------------
+model ProjectBudget {
+  id          String   @id @default(cuid())
+  projectId   String
+  type        String // e.g. Planned, Actual, Expense
+  amount      Float
+  date        DateTime @default(now())
+  description String?
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model Risk {
+  id             String   @id @default(cuid())
+  projectId      String
+  title          String
+  description    String
+  severity       Priority
+  mitigationPlan String?
+  status         String   @default("Open") // Open, Mitigated, Closed
+  reportedById   String
+
+  project    Project @relation(fields: [projectId], references: [id])
+  reportedBy User    @relation(fields: [reportedById], references: [id])
+}
+
+// -------------------------------------------------------------------------
+// 8. COLLABORATION
+// -------------------------------------------------------------------------
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  attachments Attachment[] // 👈 relation here
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  fileName   String
+  filePath   String // URL or path
+  uploadedAt DateTime @default(now())
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  uploadedById String?
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id])
+  commentId    String? // 👈 optional comment relation
+
+  Comment Comment? @relation(fields: [commentId], references: [id])
+}
+
+// -------------------------------------------------------------------------
+// 9. RESOURCES & TEAMS
+// -------------------------------------------------------------------------
+model Resource {
+  id                String   @id @default(cuid())
+  projectId         String
+  userId            String
+  allocationPercent Int      @default(100)
+  createdAt         DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+  members   TeamMember[]
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  teamId String
+  userId String
+
+  team Team @relation(fields: [teamId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+// -------------------------------------------------------------------------
+// 10. ACTIVITY LOG
+// -------------------------------------------------------------------------
+model ActivityLog {
+  id        String   @id @default(cuid())
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id])
+}
