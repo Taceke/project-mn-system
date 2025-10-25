@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs"; // ✅ required for bcrypt & prisma
+
 export async function POST(req) {
   try {
     const { name, email, password, role, captchaToken } = await req.json();
@@ -58,7 +60,7 @@ export async function POST(req) {
 
     return NextResponse.json({ message: "User registered successfully!" });
   } catch (error) {
-    console.error(error);
+    console.error("REGISTER ERROR:", error);
     return NextResponse.json(
       { message: "Registration failed" },
       { status: 500 }
