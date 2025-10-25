@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // ✅ correct path
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function Dashboard() {
@@ -14,7 +14,9 @@ export default async function Dashboard() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold">Welcome, {session.user.name || session.user.email}</h1>
+      <h1 className="text-2xl font-bold">
+        Welcome, {session.user.name || session.user.email}
+      </h1>
       <p className="mt-2">Role: {session.user.role}</p>
     </div>
   );
