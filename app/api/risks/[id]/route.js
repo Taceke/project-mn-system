@@ -1,4 +1,6 @@
 import {prisma} from "@/lib/prisma"; // make sure your prisma client is exported from lib/prisma.js
+export const runtime = "nodejs";
+
 
 export async function GET(req, { params }) {
   const { id } = params;

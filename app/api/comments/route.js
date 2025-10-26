@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import path from "path";
 import { writeFile } from "fs/promises";
+export const runtime = "nodejs";
 
 // ✅ GET all comments
 export async function GET() {

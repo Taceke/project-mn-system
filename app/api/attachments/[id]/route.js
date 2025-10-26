@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+export const runtime = "nodejs";
 
 // ✅ PUT (edit attachment metadata)
 export async function PUT(req, { params }) {

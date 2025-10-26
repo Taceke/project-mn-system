@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
+export const runtime = "nodejs";
 
 // ✅ GET all attachments
 export async function GET() {

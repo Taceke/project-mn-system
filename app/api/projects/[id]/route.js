@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+export const runtime = "nodejs";
 
 // ✅ Utility to check Admin role
 async function requireAdmin() {
