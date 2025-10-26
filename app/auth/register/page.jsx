@@ -72,7 +72,7 @@ export default function RegisterPage() {
           <option value="PROJECT_MANAGER">Project Manager</option>
           <option value="TEAM_MEMBER">Team Member</option>
           {/* <option value="CLIENT">Client</option> */}
-          <option value="ADMIN">Admin</option>
+          {/* <option value="ADMIN">Admin</option> */}
         </select>
 
         <ReCAPTCHA
