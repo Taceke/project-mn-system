@@ -1,77 +1,60 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
-import path from "path";
 
-export const runtime = "nodejs";
-
-// ✅ GET all attachments
+// ✅ Get all teams with members
 export async function GET() {
   try {
-    const attachments = await prisma.attachment.findMany({
+    const teams = await prisma.team.findMany({
       include: {
-        project: true,
-        task: true,
-        uploadedBy: true,
+        members: {
+          include: {
+            user: true,
+          },
+        },
       },
-      orderBy: { uploadedAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(attachments);
+    return NextResponse.json(teams);
   } catch (error) {
-    console.error("Error fetching attachments:", error);
+    console.error("Error fetching teams:", error);
     return NextResponse.json(
-      { error: "Failed to fetch attachments" },
+      { error: "Failed to fetch teams" },
       { status: 500 }
     );
   }
 }
-
-// ✅ POST (upload new file)
+// ✅ Add new member to a team
 export async function POST(req) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file");
-    const projectId = formData.get("projectId");
-    const taskId = formData.get("taskId");
-    const uploadedById = formData.get("uploadedById");
+    const { name, memberIds } = await req.json();
 
-    if (!file || typeof file === "string") {
-      return NextResponse.json({ error: "File is required" }, { status: 400 });
-    }
-    if (!uploadedById) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Uploader is required" },
+        { error: "Team name is required" },
         { status: 400 }
       );
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filePath = path.join(uploadDir, file.name);
-    fs.writeFileSync(filePath, buffer);
-
-    const saved = await prisma.attachment.create({
-      data: {
-        fileName: file.name,
-        filePath: `/uploads/${file.name}`,
-        projectId: projectId || null,
-        taskId: taskId || null,
-        uploadedById,
-      },
-      include: {
-        uploadedBy: true,
-        project: true,
-        task: true,
-      },
+    // ✅ Create the team first
+    const team = await prisma.team.create({
+      data: { name },
     });
 
-    return NextResponse.json(saved, { status: 201 });
+    // ✅ Add members if provided
+    if (Array.isArray(memberIds) && memberIds.length > 0) {
+      await prisma.teamMember.createMany({
+        data: memberIds.map((userId) => ({
+          teamId: team.id,
+          userId,
+        })),
+      });
+    }
+
+    return NextResponse.json(team, { status: 201 });
   } catch (error) {
-    console.error("Error uploading attachment:", error);
+    console.error("Error creating team:", error);
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: "Failed to create team" },
       { status: 500 }
     );
   }
