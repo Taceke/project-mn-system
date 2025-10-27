@@ -18,43 +18,45 @@ export async function GET() {
     return NextResponse.json(teams);
   } catch (error) {
     console.error("Error fetching teams:", error);
-    return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch teams" },
+      { status: 500 }
+    );
   }
 }
 // ✅ Add new member to a team
 export async function POST(req) {
-    try {
-      const { teamId, userId } = await req.json();
-  
-      if (!teamId || !userId) {
-        return NextResponse.json(
-          { error: "teamId and userId are required" },
-          { status: 400 }
-        );
-      }
-  
-      // Check if already exists
-      const exists = await prisma.teamMember.findFirst({
-        where: { teamId, userId },
-      });
-      if (exists) {
-        return NextResponse.json(
-          { error: "User is already a member of this team" },
-          { status: 400 }
-        );
-      }
-  
-      const newMember = await prisma.teamMember.create({
-        data: { teamId, userId },
-        include: { user: true }, // ✅ include user so UI can display name immediately
-      });
-  
-      return NextResponse.json(newMember, { status: 201 });
-    } catch (error) {
-      console.error("Error adding member:", error);
+  try {
+    const { name, memberIds } = await req.json();
+
+    if (!name) {
       return NextResponse.json(
-        { error: "Failed to add member" },
-        { status: 500 }
+        { error: "Team name is required" },
+        { status: 400 }
       );
     }
+
+    // ✅ Create the team first
+    const team = await prisma.team.create({
+      data: { name },
+    });
+
+    // ✅ Add members if provided
+    if (Array.isArray(memberIds) && memberIds.length > 0) {
+      await prisma.teamMember.createMany({
+        data: memberIds.map((userId) => ({
+          teamId: team.id,
+          userId,
+        })),
+      });
+    }
+
+    return NextResponse.json(team, { status: 201 });
+  } catch (error) {
+    console.error("Error creating team:", error);
+    return NextResponse.json(
+      { error: "Failed to create team" },
+      { status: 500 }
+    );
   }
+}
