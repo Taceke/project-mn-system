@@ -36,17 +36,14 @@ export default function NewTeamMemberPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!teamId || !userId) {
-      toast.error("Please select both team and user");
-      return;
-    }
+    if (!name) return toast.error("Team name is required");
 
     setSubmitting(true);
     try {
       const res = await fetch("/api/team-members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId, userId }),
+        body: JSON.stringify({ name, memberIds }),
       });
 
       if (!res.ok) {
@@ -77,7 +74,7 @@ export default function NewTeamMemberPage() {
           <div>
             <label className="block mb-1 font-semibold">Team *</label>
             <select
-              value={teamId}
+              value={name}
               onChange={(e) => setTeamId(e.target.value)}
               className="border p-2 rounded w-full"
               required
@@ -85,7 +82,7 @@ export default function NewTeamMemberPage() {
               <option value="">Select Team</option>
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.title}
+                  {t.name}
                 </option>
               ))}
             </select>
