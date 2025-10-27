@@ -85,7 +85,7 @@ export default function NewTeamMemberPage() {
               <option value="">Select Team</option>
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}
+                  {t.title}
                 </option>
               ))}
             </select>
