@@ -2,6 +2,20 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import {
+  LayoutDashboard,
+  Users,
+  FolderKanban,
+  FileText,
+  Paperclip,
+  Flag,
+  CheckSquare,
+  ShieldAlert,
+  Users2,
+  UserPlus,
+  MessageSquare,
+  Settings,
+} from "lucide-react";
 
 export default function DashboardLayout({ children }) {
   const { data: session, status } = useSession();
@@ -16,40 +30,31 @@ export default function DashboardLayout({ children }) {
   // Role-based nav links
   const navLinks = {
     ADMIN: [
-      { href: "/admin/dashboard", label: "Overview" },
-
-      { href: "/admin/users", label: "User Management" },
-      { href: "/admin/projects", label: "Projects" },
-      { href: "/admin/resources", label: "Resources" },
-      { href: "/admin/attachments", label: "Attachments" },
-
-      { href: "/admin/milestones", label: "milestones" },
-      { href: "/admin/tasks", label: "Tasks" },
-      { href: "/admin/risks", label: "risks" },
-      { href: "/admin/teams", label: "Teams" },
-      { href: "/admin/team-members", label: "Team-Members" },
-      { href: "/admin/comments", label: "Comments" },
-
-      // { href: "/admin/timesheets", label: "Timesheets" },
-
-      { href: "/admin/settings", label: "Settings" },
+      { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
+      { href: "/admin/users", label: "User Management", icon: Users },
+      { href: "/admin/projects", label: "Projects", icon: FolderKanban },
+      { href: "/admin/resources", label: "Resources", icon: FileText },
+      { href: "/admin/attachments", label: "Attachments", icon: Paperclip },
+      { href: "/admin/milestones", label: "Milestones", icon: Flag },
+      { href: "/admin/tasks", label: "Tasks", icon: CheckSquare },
+      { href: "/admin/risks", label: "Risks", icon: ShieldAlert },
+      { href: "/admin/teams", label: "Teams", icon: Users2 },
+      { href: "/admin/team-members", label: "Team Members", icon: UserPlus },
+      { href: "/admin/comments", label: "Comments", icon: MessageSquare },
+      { href: "/admin/settings", label: "Settings", icon: Settings },
     ],
+
     PROJECT_MANAGER: [
-      { href: "/manager/dashboard", label: "Dashboard" },
-      // { href: "/manager/projects", label: "Projects" },
-      { href: "/manager/tasks", label: "Tasks" },
-      { href: "/manager/teams", label: "Teams" },
+      { href: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/manager/tasks", label: "Tasks", icon: CheckSquare },
+      { href: "/manager/teams", label: "Teams", icon: Users2 },
     ],
+
     TEAM_MEMBER: [
-      { href: "/team/dashboard", label: "My Dashboard" },
-      { href: "/team/tasks", label: "My Tasks" },
-      { href: "/team/timesheet", label: "Timesheet" },
+      { href: "/team/dashboard", label: "My Dashboard", icon: LayoutDashboard },
+      { href: "/team/tasks", label: "My Tasks", icon: CheckSquare },
+      { href: "/team/timesheet", label: "Timesheet", icon: FileText },
     ],
-    // CLIENT: [
-    //   { href: "/client-portal", label: "Portal Home" },
-    //   { href: "/client-portal/projects", label: "My Projects" },
-    //   { href: "/client-portal/reports", label: "Reports" },
-    // ],
   };
 
   return (
@@ -65,9 +70,10 @@ export default function DashboardLayout({ children }) {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="block p-2 rounded hover:bg-gray-800"
+                  className="flex items-center gap-3 p-2 rounded hover:bg-gray-800 transition"
                 >
-                  {link.label}
+                  <link.icon size={18} />
+                  <span>{link.label}</span>
                 </Link>
               </li>
             ))}

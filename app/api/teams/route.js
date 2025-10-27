@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+export const runtime = "nodejs";
 
 // ✅ Get all teams with members
 export async function GET() {
